@@ -1,0 +1,8 @@
+prefix=Xdp
+modules=
+lib=rest
+call_prefix=xdp_
+include-directory=/usr/src/libportal-0.4/libportal
+backups=backup,bitbucket,google-backup,azure-backup,hut
+build_exclude=
+struct-prefix=Xdp
