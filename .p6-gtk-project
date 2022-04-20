@@ -5,4 +5,5 @@ call_prefix=xdp_
 include-directory=/usr/src/libportal-0.4/libportal
 backups=backup,bitbucket,google-backup,azure-backup,hut
 build_exclude=
+hfile-prefix=XDP_PUBLIC
 struct-prefix=Xdp

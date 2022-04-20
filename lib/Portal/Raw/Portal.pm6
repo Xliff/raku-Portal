@@ -5,6 +5,187 @@ use Portal::Raw::Definitions;
 
 unit package Portal::Raw::Portal;
 
+
+### /usr/src/libportal-0.4/libportal/filechooser.h
+
+sub xdp_portal_open_file (
+  XdpPortal        $portal,
+  XdpParent        $parent,
+  Str              $title,
+  GVariant         $filters,
+  GVariant         $current_filter,
+  GVariant         $choices,
+  XdpOpenFileFlags $flags,
+  GCancellable     $cancellable,
+                   &callback (XdpPortal, GAsyncResults, gpointer),
+  gpointer         $data
+)
+  is native(rest)
+  is export
+{ * }
+
+sub xdp_portal_open_file_finish (
+  XdpPortal               $portal,
+  GAsyncResult            $result,
+  CArray[Pointer[GError]] $error
+)
+  returns GVariant
+  is native(rest)
+  is export
+{ * }
+
+sub xdp_portal_save_file (
+  XdpPortal        $portal,
+  XdpParent        $parent,
+  Str              $title,
+  Str              $current_name,
+  Str              $current_folder,
+  Str              $current_file,
+  GVariant         $filters,
+  GVariant         $current_filter,
+  GVariant         $choices,
+  XdpSaveFileFlags $flags,
+  GCancellable     $cancellable,
+                   &callback (XdpPortal, GAsyncResults, gpointer),
+  gpointer         $data
+)
+  is native(rest)
+  is export
+{ * }
+
+sub xdp_portal_save_file_finish (
+  XdpPortal               $portal,
+  GAsyncResult            $result,
+  CArray[Pointer[GError]] $error
+)
+  returns GVariant
+  is native(rest)
+  is export
+{ * }
+
+sub xdp_portal_save_files (
+  XdpPortal        $portal,
+  XdpParent        $parent,
+  Str              $title,
+  Str              $current_name,
+  Str              $current_folder,
+  GVariant         $files,
+  GVariant         $choices,
+  XdpSaveFileFlags $flags,
+  GCancellable     $cancellable,
+                   &callback (XdpPortal, GAsyncResults, gpointer),
+  gpointer         $data
+)
+  is native(rest)
+  is export
+{ * }
+
+sub xdp_portal_save_files_finish (
+  XdpPortal               $portal,
+  GAsyncResult            $result,
+  CArray[Pointer[GError]] $error
+)
+  returns GVariant
+  is native(rest)
+  is export
+{ * }
+
+### /usr/src/libportal-0.4/libportal/inhibit.h
+
+sub xdp_portal_session_inhibit (
+  XdpPortal           $portal,
+  XdpParent           $parent,
+  Str                 $reason,
+  XdpInhibitFlags     $flags,
+  GCancellable        $cancellable,
+                      &callback (XdpPortal, GAsyncResults, gpointer),
+  gpointer            $data
+)
+  is native(rest)
+  is export
+{ * }
+
+sub xdp_portal_session_inhibit_finish (
+  XdpPortal               $portal,
+  GAsyncResult            $result,
+  CArray[Pointer[GError]] $error
+)
+  returns gint
+  is native(rest)
+  is export
+{ * }
+
+sub xdp_portal_session_monitor_query_end_response (XdpPortal $portal)
+  is native(rest)
+  is export
+{ * }
+
+sub xdp_portal_session_monitor_start (
+  XdpPortal              $portal,
+  XdpParent              $parent,
+  XdpSessionMonitorFlags $flags,
+  GCancellable           $cancellable,
+  GAsyncReadyCallback    $callback,
+  gpointer               $data
+)
+  is native(rest)
+  is export
+{ * }
+
+sub xdp_portal_session_monitor_start_finish (
+  XdpPortal               $portal,
+  GAsyncResult            $result,
+  CArray[Pointer[GError]] $error
+)
+  returns uint32
+  is native(rest)
+  is export
+{ * }
+
+sub xdp_portal_session_monitor_stop (XdpPortal $portal)
+  is native(rest)
+  is export
+{ * }
+
+sub xdp_portal_session_uninhibit (XdpPortal $portal, gint $id)
+  is native(rest)
+  is export
+{ * }
+
+
+### /usr/src/libportal-0.4/libportal/location.h
+
+sub xdp_portal_location_monitor_start (
+  XdpPortal               $portal,
+  XdpParent               $parent,
+  guint                   $distance_threshold,
+  guint                   $time_threshold,
+  XdpLocationAccuracy     $accuracy,
+  XdpLocationMonitorFlags $flags,
+  GCancellable            $cancellable,
+                          &callback (XdpPortal, GAsyncResult, gpointer),
+  gpointer                $data
+)
+  is native(rest)
+  is export
+{ * }
+
+sub xdp_portal_location_monitor_start_finish (
+  XdpPortal               $portal,
+  GAsyncResult            $result,
+  CArray[Pointer[GError]] $error
+)
+  returns uint32
+  is native(rest)
+  is export
+{ * }
+
+sub xdp_portal_location_monitor_stop (XdpPortal $portal)
+  is native(rest)
+  is export
+{ * }
+
+
 ### /usr/src/libportal-0.4/libportal/notification.h
 
 sub xdp_portal_add_notification (

@@ -14,14 +14,15 @@ class Portal {
   has XdpPortal $!p
 
   proto method create_remote_desktop_session (|)
+  { * }
 
   method create_remote_desktop_session (
     Int()           $devices,
     Int()           $outputs,
                     &callback,
-    gpointer        $data         = gpointer
+    gpointer        $data         = gpointer,
     Int()          :$flags        = 0,
-    GCancellable() :$cancellable  = GCancellable,
+    GCancellable() :$cancellable  = GCancellable
   ) {
     samewith($devices, $outputs, $flags, $cancellable, &callback, $data);
   }
@@ -50,7 +51,7 @@ class Portal {
 
   method create_remote_desktop_session_finish (
     GAsyncResult()           $result,
-    CArray[Pointer[GError]]  $error   = gerror
+    CArray[Pointer[GError]]  $error   = gerror,
                             :$raw     = False
   ) {
     clear_error;
@@ -115,7 +116,7 @@ class Portal {
                     &callback,
     gpointer        $data         = gpointer,
     XdpParent()    :$parent       = XdpParent,
-    GCancellable() :$cancellable  = GCancellable,
+    GCancellable() :$cancellable  = GCancellable
   ) {
     samewith($parent, $flags, $cancellable, &callback, $data);
   }
@@ -150,10 +151,76 @@ class Portal {
     xdp_session_keyboard_key($!p, $ks, $k, $s);
   }
 
-  proto method monitor_start (|)
+  proto method location_monitor_start (|)
   { * }
 
-  multi method monitor_start (
+  multi method location_monitor_start (
+    Int()           $distance_threshold,
+    Int()           $time_threshold,
+    Int()           $accuracy,
+                    &callback,
+    gpointer        $data                = gpointer,
+    XdpParent()    :$parent              = XdpParent,
+    Int()          :$flags               = 0,
+    GCancellable() :$cancellabl          = GCancellable
+  ) {
+    samewith(
+      $parent,
+      $distance_threshold,
+      $time_threshold,
+      $accuracy,
+      $flags,
+      $cancellable,
+      &callback,
+      $data
+    );
+  }
+  multi method location_monitor_start (
+    XdpParent()    $parent,
+    Int()          $distance_threshold,
+    Int()          $time_threshold,
+    Int()          $accuracy,
+    Int()          $flags,
+    GCancellable() $cancellable,
+                   &callback,
+    gpointer       $data                = gpointer
+  ) {
+    my XdpLocationAccuracy     $a = $accuracy;
+    my XdpLocationMonitorFlags $f = $flags;
+
+    my guint ($d, $t) = ($distance_threshold, $time_threshold);
+
+    xdp_portal_location_monitor_start(
+      $!p,
+      $parent,
+      $d,
+      $t,
+      $a,
+      $f,
+      $cancellable,
+      &callback,
+      $data
+    );
+  }
+
+  method location_monitor_start_finish (
+    GAsyncResult()          $result,
+    CArray[Pointer[GError]] $error   = gerror
+  ) {
+    clear_error;
+    my $rv = so xdp_portal_location_monitor_start_finish($!p, $result, $error);
+    set_error($error);
+    $rv;
+  }
+
+  method location_monitor_stop {
+    xdp_portal_location_monitor_stop($!p);
+  }
+
+  proto method update_monitor_start (|)
+  { * }
+
+  multi method update_monitor_start (
     Int()           $flags,
                     &callback,
     gpointer        $data        = gpointer,
@@ -161,7 +228,7 @@ class Portal {
   ) {
     samewith($flags, $cancellable, &callback, $data);
   }
-  multi method monitor_start (
+  multi method update_monitor_start (
     Int()          $flags,
     GCancellable() $cancellable,
                    &callback,
@@ -176,7 +243,7 @@ class Portal {
     );
   }
 
-  method monitor_start_finish (
+  method update_monitor_start_finish (
     GAsyncResult()          $result,
     CArray[Pointer[GError]] $error   = gerror
   ) {
@@ -186,7 +253,7 @@ class Portal {
     $rv;
   }
 
-  method monitor_stop {
+  method update_monitor_stop {
     xdp_portal_update_monitor_stop($!p);
   }
 
@@ -267,6 +334,128 @@ class Portal {
     my $rv = so xdp_portal_open_directory_finish($!p, $result, $error);
     set_error($error);
     $rv;
+  }
+
+  proto method open_file (|)
+  { * }
+
+  # The format for the @filters argument is a(sa(us)).
+  # Each item in the array specifies a single filter to offer to the user.
+  # The first string is a user-visible name for the filter. The a(us)
+  # specifies a list of filter strings, which can be either a glob pattern
+  # (indicated by 0) or a mimetype (indicated by 1).
+  #
+  # Example: [('Images', [(0, '*.ico'), (1, 'image/png')]), ('Text', [(0, '*.txt')])]
+  #
+  # The format for the @choices argument is a(ssa(ss)s).
+  # For each element, the first string is an ID that will be returned
+  # with the response, te second string is a user-visible label. The
+  # a(ss) is the list of choices, each being a is an ID and a
+  # user-visible label. The final string is the initial selection,
+  # or "", to let the portal decide which choice will be initially selected.
+  # None of the strings, except for the initial selection, should be empty.
+  #
+  # As a special case, passing an empty array for the list of choices
+  # indicates a boolean choice that is typically displayed as a check
+  # button, using "true" and "false" as the choices.
+  #
+  # Example: [('encoding', 'Encoding', [('utf8', 'Unicode (UTF-8)'), ('latin15', 'Western')], 'latin15'), ('reencode', 'Reencode', [], 'false')]
+  #
+  # When the request is done, @callback will be called. You can then
+  # call xdp_portal_open_file_finish() to get the results.
+  multi method open_file (
+                   :&callback,
+    gpointer       :$data           = gpointer,
+    XdpParent()     $parent         = XdpParent,
+    Str()           $title          = 'Open File',
+    GVariant()      $filters        = GVariant,
+    GVariant()      $current_filter = GVariant,
+    GVariant()      $choices        = GVariant,
+    Int()           $flags          = 0,
+    GCancellable()  $cancellable    = GCancellable
+  ) {
+    samewith(
+      $parent,
+      $title,
+      $filters,
+      $current_filter,
+      $choices,
+      $flags,
+      $cancellable,
+      &callback,
+      $data
+    );
+  }
+  multi method open_file (
+    XdpParent()    $parent,
+    Str()          $title,
+    GVariant()     $filters,
+    GVariant()     $current_filter,
+    GVariant()     $choices,
+    Int()          $flags,
+    GCancellable() $cancellable,
+                   &callback,
+    gpointer       $data            = gpointer
+  ) {
+    my XdpOpenFileFlags $f = $flags;
+
+    xdp_portal_open_file(
+      $!p,
+      $parent,
+      $title,
+      $filters,
+      $current_filter,
+      $choices,
+      $f,
+      $cancellable,
+      $callback,
+      $data
+    );
+  }
+
+  # Finishes the open-file request, and returns
+  # the result in the form of a #GVariant dictionary containing
+  # the following fields:
+  # - uris `as`: an array of strings containing the uris of selected files
+  # - choices `a(ss)`: an array of pairs of strings, the first string being the
+  #     ID of a combobox that was passed into this call, the second string
+  #     being the selected option.
+  #
+  # Returns: (transfer full): a #GVariant dictionary with the results
+  method open_file_finish (
+    GAsyncResult()           $result,
+    CArray[Pointer[GError]]  $error   = gerror,
+                            :$raw     = False,
+                            :$variant = False
+  ) {
+    clear_error;
+    my $v = xdp_portal_open_file_finish($!p, $result, $error);
+    set_error($error);
+
+    $v = propReturnObject($v, $raw, |GLib::Variant.getTypePair);
+    unless $raw || $variant {
+      my %h = $v.Hash;
+
+      %h<uris>    .= Array if %h<uris>;
+      %h<choices> .= Array if %h<choices>;
+    }
+    $v;
+  }
+
+  method save_file (XdpParent $parent, Str $title, Str $current_name, Str $current_folder, Str $current_file, GVariant $filters, GVariant $current_filter, GVariant $choices, XdpSaveFileFlags $flags, GCancellable $cancellable, GAsyncReadyCallback $callback, gpointer $data) {
+    xdp_portal_save_file($!p, $parent, $title, $current_name, $current_folder, $current_file, $filters, $current_filter, $choices, $flags, $cancellable, $callback, $data);
+  }
+
+  method save_file_finish (GAsyncResult $result, CArray[Pointer[GError]] $error) {
+    xdp_portal_save_file_finish($!p, $result, $error);
+  }
+
+  method save_files (XdpParent $parent, Str $title, Str $current_name, Str $current_folder, GVariant $files, GVariant $choices, XdpSaveFileFlags $flags, GCancellable $cancellable, GAsyncReadyCallback $callback, gpointer $data) {
+    xdp_portal_save_files($!p, $parent, $title, $current_name, $current_folder, $files, $choices, $flags, $cancellable, $callback, $data);
+  }
+
+  method save_files_finish (GAsyncResult $result, CArray[Pointer[GError]] $error) {
+    xdp_portal_save_files_finish($!p, $result, $error);
   }
 
   proto method open_uri (|)
@@ -370,7 +559,7 @@ class Portal {
   #     avoid the print dialog
   method prepare_print_finish (
     GAsyncResult()           $result,
-    CArray[Pointer[GError]]  $error   = gerror
+    CArray[Pointer[GError]]  $error   = gerror,
                             :$raw     = False
   ) {
     clear_error;
@@ -448,7 +637,7 @@ class Portal {
 
   multi method pick_color (
                     &callback,
-    gpointer        $data        = gpointer
+    gpointer        $data        = gpointer,
     XdpParent()    :$parent      = XdpParent,
     GCancellable() :$cancellable = GCancellable
   ) {
@@ -524,6 +713,102 @@ class Portal {
       $n,
       $t
     );
+  }
+
+  proto method session_inhibit (|)
+  { * }
+
+  multi method session_inhibit (
+                    &callback,
+    gpointer        $data         = gpointer,
+    XdpParent()    :$parent       = XdpParent,
+    Str()          :$reason       = Str,
+    Int()          :$flags        = 0,
+    GCancellable() :$cancellable  = GCancellable
+  ) {
+    samewith($parent, $reason, $flags, $cancellable, &callback, $data);
+  }
+  multi method session_inhibit (
+    XdpParent()    $parent,
+    Str()          $reason,
+    Int()          $flags,
+    GCancellable() $cancellable,
+                   &callback,
+    gpointer       $data         = gpointer
+  ) {
+    my XdpInhibitFlags $f = $flags;
+
+    xdp_portal_session_inhibit(
+      $!pl,
+      $parent,
+      $reason,
+      $f,
+      $cancellable,
+      &callback,
+      $data
+    );
+  }
+
+  method session_inhibit_finish (
+    GAsyncResult()          $result,
+    CArray[Pointer[GError]] $error   = gerror
+  ) {
+    xdp_portal_session_inhibit_finish($!pl, $result, $error);
+  }
+
+  method session_monitor_query_end_response {
+    xdp_portal_session_monitor_query_end_response($!pl);
+  }
+
+  proto method session_monitor_start (|)
+  { * }
+
+  multi method session_monitor_start (
+                    &callback,
+    gpointer        $data        = gpointer,
+    XdpParent()    :$parent      = XdpParent,
+    Int()          :$flags       = 0,
+    GCancellable() :$cancellable = GCancellable
+  ) {
+    samewith($parent, $flags, $cancellable, &callback, $data);
+  }
+  multi method session_monitor_start (
+    XdpParent()    $parent,
+    Int()          $flags,
+    GCancellable() $cancellable,
+                   &callback,
+    gpointer       $data
+  ) {
+    my XdpSessionMonitorFlags $f = $flags;
+
+    xdp_portal_session_monitor_start(
+      $!pl,
+      $parent,
+      $f,
+      $cancellable,
+      &callback,
+      $data
+    );
+  }
+
+  method session_monitor_start_finish (
+    GAsyncResult()          $result,
+    CArray[Pointer[GError]] $error   = gerror
+  ) {
+    clear_error;
+    my $rv = so xdp_portal_session_monitor_start_finish($!pl, $result, $error);
+    set_error($error);
+    $rv;
+  }
+
+  method session_monitor_stop {
+    xdp_portal_session_monitor_stop($!pl);
+  }
+
+  method session_uninhibit (Int() $id) {
+    my gint $i = $id;
+
+    xdp_portal_session_uninhibit($!pl, $i);
   }
 
   proto method set_wallpaper (|)
